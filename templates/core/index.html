@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load materializecss %}
+{% block content %}
+    <div class="row">
+        <br>
+        <form class="col s12" method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col s12 center-align">
+                    <div class="input-field inline">
+                        {{ form|materializecss }}
+                        <button class="btn waves-effect waves-light" type="submit">Close</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% if stats %}
+    <div class="section">
+        <table class="centered">
+            <thead>
+            <tr>
+                <th>Site</th>
+                <th>Total Posts</th>
+                <th>Men</th>
+                <th>Women</th>
+                <th>Average Post Length</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Dcard</td>
+                <td>{{ total_dcard_posts }}</td>
+                <td>{{ dcard_male }}</td>
+                <td>{{ dcard_female }}</td>
+                <td>{{ dcard_average_post_length }}</td>
+            </tr>
+            <tr>
+                <td>Weibo</td>
+                <td>{{ total_weibo_posts }}</td>
+                <td>{{ weibo_male }}</td>
+                <td>{{ weibo_female }}</td>
+                <td>{{ weibo_average_post_length }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {% if query_doc %}
+        <div class="row">
+        <div class="col s12">
+        <div class="section">
+            <h5>Weibo Post Input</h5>
+            <p>{{ query_doc }}</p>
+        </div>
+        <div class="divider"></div>
+        <div class="section">
+        <table class="highlight">
+            <thead class="centered">
+            <tr>
+                <th>#</th>
+                <th>Similarity</th>
+                <th>Post</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for doc in similar_docs %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ doc.1|floatformat:2 }}</td>
+                    <td>
+                        <ul class="collapsible">
+                            <li>
+                                <div class="collapsible-header">{{ doc.0|truncatechars_html:100 }}</div>
+                                <div class="collapsible-body">
+                                    {{ doc.0 }}
+                                </div>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            {% endfor %}
+        </table>
+    {% endif %}
+</div>
+    {% if stats %}
+        <div class="row">
+            <div class="col s12">
+
+                <div class="row">
+                    <div class="col s6">
+                        <h3>Dcard</h3>
+                        <table id="dcard" class="highlight freq_table">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Token</th>
+                                <th>Frequency</th>
+                            </tr>
+                            </thead>
+
+                            {% for freq in dcard_freq %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ freq.0 }}</td>
+                                    <td>{{ freq.1 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    <div class="col s6">
+                        <h3>Weibo</h3>
+                        <table id="weibo" class="highlight freq_table">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Token</th>
+                                <th>Frequency</th>
+                            </tr>
+                            </thead>
+                            {% for freq in weibo_freq %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ freq.0 }}</td>
+                                    <td>{{ freq.1 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Modal Structure -->
+    <div id="collocation_modal" class="modal">
+        <div class="modal-content">
+            <h4>Collocations</h4>
+            <table class="highlight centered">
+                <thead>
+                <tr>
+                    <th>Token 1</th>
+                    <th>Token 2</th>
+                </tr>
+                </thead>
+                <tbody id="collocation_table">
+
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block javascript %}
+    <script>
+        $(document).ready(function () {
+            $(".collapsible").collapsible();
+            $('.modal').modal();
+            {#$(".freq_table > tbody > tr > td:nth-child(2)")#}
+            $(".freq_table > tbody > tr > td:nth-child(2)").click(function () {
+                let token = $(this).text();
+                let table = $(this).closest('table').attr('id');
+                $('#collocation_modal').modal('open');
+
+                $.ajax({
+                    url: "{% url 'collocation' %}",
+                    type: "GET",
+                    data: {
+                        'token': token,
+                        'table': table,
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        let results = data.results;
+                        let collo_table = $("#collocation_table");
+                        $.each(results, function (idx, elem) {
+                            collo_table.append("<tr><td>" + elem[0] + "</td><td>" + elem[1] + "</td></tr>");
+                        });
+
+                        $("#collocation_modal_content").append(
+                            "<h4> " + token + "collocations</h4>"
+                        )
+
+                    },
+                    error: function (data) {
+                        alert("error")
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock javascript %}
