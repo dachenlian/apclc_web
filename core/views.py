@@ -3,12 +3,11 @@ import os
 
 from django.views.generic.edit import FormView
 from django.http import JsonResponse
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+
 from .forms import InputForm
 from .utils import get_stats, get_similarities, get_collocates
 from web.settings import BASE_DIR
-# class Home(TemplateView):
-#     template_name = "core/index.html"
+
 
 with open(os.path.join(BASE_DIR, 'static/json/weibo_punc_unique_20180818.json')) as fp:
     weibo = json.load(fp)
@@ -35,6 +34,8 @@ class HomeView(FormView):
                 stats=True,
                 dcard_posts=stats['dcard_posts'],
                 weibo_posts=stats['weibo_posts'],
+                dcard_sentiment=stats['dcard_sentiment'],
+                weibo_sentiment=stats['weibo_sentiment'],
                 weibo_average_post_length=stats['weibo_average_post_length'],
                 dcard_average_post_length=stats['dcard_average_post_length'],
                 total_weibo_posts=stats['total_weibo_posts'],

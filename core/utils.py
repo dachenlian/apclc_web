@@ -10,15 +10,16 @@ from gensim import corpora, models, similarities
 import nltk
 
 from web.settings import BASE_DIR
+from sentiment.utils import calculate_sentiment
 
 
 PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation)
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 with open(f"{BASE_DIR}/static/misc/baidu_stopwords.txt") as fp:
-    stop_cn = fp.read().split("\n")
+    stop_cn = set(fp.read().split("\n"))
 with open(f"{BASE_DIR}/static/misc/baidu_stopwords_trad.txt") as fp:
-    stop_tw = fp.read().split("\n")
+    stop_tw = set(fp.read().split("\n"))
 
 
 def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True):
@@ -75,9 +76,14 @@ def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True)
     weibo_average_post_length = sum([len(w['cleanText_seg_cn']) for w in weibo_posts]) / len(weibo_posts)
     dcard_average_post_length = sum([len(d['content_seg']) for d in dcard_posts]) / len(dcard_posts)
 
+    dcard_sentiment = calculate_sentiment([d['content_seg'] for d in dcard_posts])
+    weibo_sentiment = calculate_sentiment([w['cleanText_seg_tw'] for w in weibo_posts])
+
     stats = {
         'dcard_posts': dcard_posts,
         'weibo_posts': weibo_posts,
+        'dcard_sentiment': dcard_sentiment,
+        'weibo_sentiment': weibo_sentiment,
         'weibo_average_post_length': weibo_average_post_length,
         'dcard_average_post_length': dcard_average_post_length,
         'total_dcard_posts': total_dcard_posts,
