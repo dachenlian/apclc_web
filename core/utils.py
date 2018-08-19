@@ -108,7 +108,7 @@ def get_similarities(tag, dcard, weibo):
     corpora.MmCorpus.serialize(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.mm", corpus)
     tfidf = models.TfidfModel(corpus)
     corpus_tfidf = tfidf[corpus]
-    lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=25)
+    lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=300)
     # corpus_lsi = lsi[corpus_tfidf]
     lsi.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.lsi")
     index = similarities.MatrixSimilarity(lsi[corpus])

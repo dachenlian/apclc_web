@@ -12,6 +12,7 @@ with open(f"{CURRENT_DIR.parent}/static/emo_neg.json") as fp:
 
 
 def calculate_sentiment(seg_posts):
+    avg_tokens = sum(len(p) for p in seg_posts) / len(seg_posts)
     pos_count = 0
     neg_count = 0
     c = Counter()
@@ -25,6 +26,6 @@ def calculate_sentiment(seg_posts):
         elif tok in neg_list:
             neg_count += count
 
-    final_score = (pos_count - neg_count) / len(seg_posts)
+    final_score = (pos_count - neg_count) / (avg_tokens * len(seg_posts))
 
     return final_score
