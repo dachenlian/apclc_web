@@ -1,6 +1,5 @@
 from pathlib import Path
 import json
-from collections import Counter
 
 CURRENT_DIR = Path(__file__)
 
@@ -12,20 +11,19 @@ with open(f"{CURRENT_DIR.parent}/static/emo_neg.json") as fp:
 
 
 def calculate_sentiment(seg_posts):
-    avg_tokens = sum(len(p) for p in seg_posts) / len(seg_posts)
-    pos_count = 0
-    neg_count = 0
-    c = Counter()
+    scores = []
 
     for post in seg_posts:
-        c.update(post)
+        pos_count = 0
+        neg_count = 0
+        for tok in post:
+            if tok in pos_list:
+                pos_count += 1
+            elif tok in neg_list:
+                neg_count += 1
+        post_score = (pos_count - neg_count) / len(post)
+        scores.append(post_score)
 
-    for tok, count in c.items():
-        if tok in pos_list:
-            pos_count += count
-        elif tok in neg_list:
-            neg_count += count
-
-    final_score = (pos_count - neg_count) / (avg_tokens * len(seg_posts))
+    final_score = sum(scores) / len(seg_posts)
 
     return final_score

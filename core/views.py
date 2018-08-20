@@ -9,7 +9,7 @@ from .utils import get_stats, get_similarities, get_collocates
 from web.settings import BASE_DIR
 
 
-with open(os.path.join(BASE_DIR, 'static/json/weibo_punc_unique_20180818.json')) as fp:
+with open(os.path.join(BASE_DIR, 'static/json/weibo_punc_unique_20180820.json')) as fp:
     weibo = json.load(fp)
 with open(os.path.join(BASE_DIR, 'static/json/dcard_punc_unique_20180818.json')) as fp:
     dcard = json.load(fp)
