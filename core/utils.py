@@ -145,7 +145,7 @@ def get_collocates(token, table):
 
     w_filter = partial(word_filter, token)
 
-    finder.apply_freq_filter(3)
+    finder.apply_freq_filter(1)
     finder.apply_ngram_filter(w_filter)
     results = finder.nbest(bigram_measures.pmi, 100000000000000000)
 
