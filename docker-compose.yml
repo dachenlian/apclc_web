@@ -1,10 +1,20 @@
 version: '3'
 
 services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
   web:
     build: .
+    restart: always
+    env_file:
+      - web-variables.env
     command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8001"
     volumes:
       - .:/code
     ports:
       - "8001:8001"
+    depends_on:
+      - db

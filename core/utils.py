@@ -14,7 +14,7 @@ from web.settings import BASE_DIR
 from sentiment.utils import calculate_sentiment
 
 
-PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation)
+PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation) + ["##"]
 punc_regex = re.compile(r"")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -61,7 +61,7 @@ def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True)
 
     weibo_freq = weibo_freq.most_common()
     if filter_punctuation:
-        weibo_freq = [tok for tok in weibo_freq if not tok[0] not in PUNCTUATION]
+        weibo_freq = [tok for tok in weibo_freq if tok[0] not in PUNCTUATION]
     if filter_stopwords:
         weibo_freq = [tok for tok in weibo_freq if tok[0] not in stop_cn]
 
@@ -147,7 +147,7 @@ def get_collocates(token, table):
 
     w_filter = partial(word_filter, token)
 
-    finder.apply_freq_filter(1)
+    finder.apply_freq_filter(3)
     finder.apply_ngram_filter(w_filter)
     results = finder.nbest(bigram_measures.pmi, 100000000000000000)
 

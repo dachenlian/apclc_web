@@ -1,0 +1,31 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+weibopy = "*"
+ipykernel = "*"
+scrapy = "*"
+dcard-spider = "*"
+requests = "*"
+sqlalchemy = "*"
+mysql-connector = "*"
+"beautifulsoup4" = "*"
+opencc-python-reimplemented = "*"
+gensim = "*"
+selenium = "*"
+pyquery = "*"
+flask = "*"
+django-materializecss-form = "*"
+django = "*"
+django-loadjson = "*"
+zhon = "*"
+nltk = "*"
+jseg = "*"
+django-extensions = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.7.0"
