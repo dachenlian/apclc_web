@@ -24,8 +24,13 @@ zhon = "*"
 nltk = "*"
 jseg = "*"
 django-extensions = "*"
+"psycopg2" = "*"
+jieba = "*"
+opencc = "*"
 
 [dev-packages]
+weibo-scraper = "*"
+flasgger = "*"
 
 [requires]
 python_version = "3.7.0"

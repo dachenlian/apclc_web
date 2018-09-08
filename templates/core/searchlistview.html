@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row">
+    {% if dcard %}
+    {% for d in dcard %}
+    <p>{{ d.content_clean }}</p>
+    {% endfor %}
+    {% endif %}
+
+    {% if weibo %}
+    {% for w in weibo %}
+    <p>{{ w.cn_content_clean }}</p>
+    {% endfor %}
+    {% endif %}
+        {% if is_paginated %}
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li><a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">first</a></li>
+                    <li><a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_left</i> </a>
+                    </li>
+                {% else %}
+                    <li class="disabled"><i class="material-icons">chevron_left</i></li>
+                {% endif %}
+                {% for i in paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="active"><a href="#!">{{ i }}</a></li>
+                    {% else %}
+                        <li class="waves-effect"><a href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li><a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_right</i></a></li>
+                    <li><a href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">last</a></li>
+                {% else %}
+                    <li class="disabled"><i class="material-icons">chevron_right</i></li>
+                {% endif %}
+            </ul>
+        {% endif %}
+    </div>
+    {#    {% if is_paginated %}#}
+    {#        <div class="pagination">#}
+    {#    <span class="step-links">#}
+    {#        {% if dcard.has_previous %}#}
+    {#            <a href="?page=1">&laquo; first</a>#}
+    {#            <a href="?page={{ dcard.previous_page_number }}">previous</a>#}
+    {#        {% endif %}#}
+    {##}
+    {#        <span class="current">#}
+    {#            Page {{ dcard.number }} of {{ dcard.paginator.num_pages }}.#}
+    {#        </span>#}
+    {##}
+    {#        {% if dcard.has_next %}#}
+    {#            <a href="?page={{ dcard.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">next</a>#}
+    {#            <a href="?page={{ dcard.paginator.num_pages }}">last &raquo;</a>#}
+    {#        {% endif %}#}
+    {#    </span>#}
+    {#        </div>#}
+    {#    {% endif %}#}
+    {#{% for w in weibo %}#}
+    {#<p>{{ w.content_raw }}</p>#}
+    {#{% endfor %}#}
+{% endblock content %}

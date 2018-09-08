@@ -20,6 +20,7 @@ import core.views
 urlpatterns = [
     # re_path(r'^/$', include('core.urls', namespace='core')),
     path('admin/', admin.site.urls),
-    path('', core.views.HomeView.as_view(), name="home"),
+    re_path(r"^results/$", core.views.SearchListView.as_view(), name='results'),
+    re_path(r'^$', core.views.HomeView.as_view(), name="home"),
     re_path('^ajax/collocation/$', core.views.collocation_view, name='collocation')
 ]

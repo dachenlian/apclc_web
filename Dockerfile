@@ -3,5 +3,5 @@ ENV PYTHONUNBUFFERED 1
 RUN mkdir /code
 ADD . /code/
 RUN pip install pipenv
-WORKDIR /code/web
-RUN pipenv install -r --system
+WORKDIR /code/
+RUN pipenv install --system

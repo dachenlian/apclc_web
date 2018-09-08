@@ -4,15 +4,18 @@ import logging
 import random
 from collections import Counter
 import string
+import json
 
 import zhon.hanzi
 from gensim import corpora, models, similarities
 import nltk
 import re
+import jieba
+from opencc import OpenCC
 
-from web.settings import BASE_DIR
+from web.settings.base import BASE_DIR
 from sentiment.utils import calculate_sentiment
-
+from core.models import DcardPost, WeiboPost, WeiboFiveMilPost
 
 PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation) + ["##"]
 punc_regex = re.compile(r"")
@@ -153,4 +156,108 @@ def get_collocates(token, table):
 
     return results
 
+
+def dcard_save_to_db(file):
+    with open(file) as fp:
+        dcard = json.load(fp)
+
+    for d in dcard:
+        DcardPost(
+            _id=d.get('_id'),
+            school=d.get('school'),
+            department=d.get('department'),
+            forum_name=d.get('forumName'),
+            forum_alias=d.get('forumAlias'),
+            title=d.get('title'),
+            content_raw=d.get('content_raw'),
+            content_clean=d.get('content_clean'),
+            content_clean_seg=d.get('content_seg'),
+            tags=d.get('tags'),
+            created_at=d.get('createdAt'),
+            user_gender=d.get('gender'),
+            like_count=d.get('likeCount'),
+            comment_count=d.get('commentCount'),
+            topics=d.get('topics'),
+            has_images=d.get('withImages'),
+            has_videos=d.get('withVideos'),
+            links=d.get('links')
+        ).save()
+
+
+def weibo_save_to_db(file):
+    with open(file) as fp:
+        weibo = json.load(fp)
+
+    for w in weibo:
+        WeiboPost(
+            _id=w.get('_id'),
+            content_raw=w.get('rawText'),
+            cn_content_clean=w.get('cleanText_cn'),
+            cn_content_clean_seg=w.get('cleanText_seg_cn'),
+            tw_content_clean=w.get('cleanText_tw'),
+            tw_content_clean_seg=w.get('cleanText_seg_tw'),
+            cn_tags=w.get('tags_cn'),
+            tw_tags=w.get('tags_tw'),
+            is_long_text=w.get('isLongText'),
+            created_at=w.get('createdAt'),
+            user_gender=w.get('userGender'),
+            user_screen_name=w.get('userScreenName'),
+            user_followers_count=w.get('userFollowersCount'),
+            user_profile_url=w.get('userProfileUrl'),
+            user_profile_image_url=w.get('userProfileImageUrl'),
+            comments_count=w.get('commentsCount')
+        ).save()
+
+
+def weibo_five_mil_save_to_db(file):
+    print("Starting...")
+    openCC = OpenCC('s2t')
+    hashtag_regex = re.compile(r"#(\w+)#")
+    clean_regex = re.compile(r"[(\s)|(\u200b)]+")
+    html_regex = re.compile(r'(www|http)\S+', flags=re.MULTILINE)
+    null_regex = re.compile(r'\x00')
+    with open(file) as fp:
+        fp.readline()  # skip headers
+        for idx, line in enumerate(fp):
+            if idx % 10000 == 0:
+                print(f"{idx} posts...")
+            post = line.split("\t")
+            weibo_id = int(post[0])
+            if WeiboFiveMilPost.objects.filter(weibo_id=weibo_id).exists():
+                continue
+            else:
+                attitudes_count = int(post[1])
+                comments_count = int(post[3])
+                created_at = post[4]
+                _id = int(post[7])
+                content_raw = post[18]
+                content_raw = null_regex.sub("", content_raw)
+                cn_content_clean = clean_regex.sub("", content_raw)
+                cn_content_clean = html_regex.sub("LINK", cn_content_clean)
+                cn_content_clean_seg = list(jieba.cut(cn_content_clean))
+                tw_content_clean = openCC.convert(cn_content_clean)
+                tw_content_clean_seg = [openCC.convert(c) for c in cn_content_clean_seg]
+                cn_tags = hashtag_regex.findall(cn_content_clean)
+                if cn_tags:
+                    tw_tags = [openCC.convert(t) for t in cn_tags]
+                else:
+                    tw_tags = []
+                reposts_count = int(post[16])
+                source = post[17]
+                WeiboFiveMilPost(
+                    weibo_id=weibo_id,
+                    attitudes_count=attitudes_count,
+                    comments_count=comments_count,
+                    created_at=created_at,
+                    _id=_id,
+                    content_raw=content_raw,
+                    cn_content_clean=cn_content_clean,
+                    cn_content_clean_seg=cn_content_clean_seg,
+                    tw_content_clean=tw_content_clean,
+                    tw_content_clean_seg=tw_content_clean_seg,
+                    cn_tags=cn_tags,
+                    tw_tags=tw_tags,
+                    source=source,
+                    reposts_count=reposts_count
+                ).save()
 
