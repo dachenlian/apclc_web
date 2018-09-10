@@ -1,23 +1,182 @@
 {% extends 'base.html' %}
 
+{% block navbar %}
+    <div class="nav-content">
+        <ul class="tabs tabs-transparent">
+            <li class="tab"><a href="#quick">Quick stats</a></li>
+            <li class="tab"><a href="#frequency">Frequency</a></li>
+            <li class="tab"><a href="#posts">Posts</a></li>
+        </ul>
+    </div>
+{% endblock navbar %}
 {% block content %}
+    <h1>{{ tags }}</h1>
+    <h3>Search results</h3>
     <div class="row">
-    {% if dcard %}
-    {% for d in dcard %}
-    <p>{{ d.content_clean }}</p>
-    {% endfor %}
-    {% endif %}
+        {% if stats %}
+            <div class="section">
+                <h4 id="quick">Quick stats</h4>
+                <table class="centered">
+                    <thead>
+                    <tr>
+                        <th>Site</th>
+                        <th>Total Posts</th>
+                        <th>Men</th>
+                        <th>Women</th>
+                        <th>Average Post Length</th>
+                        <th>Naive Polarity</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Dcard</td>
+                        <td>{{ stats.total_dcard_posts }}</td>
+                        <td>{{ stats.dcard_male }}</td>
+                        <td>{{ stats.dcard_female }}</td>
+                        <td>{{ stats.dcard_average_post_length }}</td>
+                        <td>{{ stats.dcard_sentiment }}</td>
+                    </tr>
+                    <tr>
+                        <td>Weibo</td>
+                        <td>{{ stats.total_weibo_posts }}</td>
+                        <td>{{ stats.weibo_male }}</td>
+                        <td>{{ stats.weibo_female }}</td>
+                        <td>{{ stats.weibo_average_post_length }}</td>
+                        <td>{{ stats.weibo_sentiment }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+        {% endif %}
+    <div class="row">
+        <div class="section">
+            <h4 id="frequency">Frequency</h4>
+            <div class="col l6 s12">
+                <h5>Dcard</h5>
+                <table id="dcard" class="highlight freq_table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Token</th>
+                        <th>Frequency</th>
+                    </tr>
+                    </thead>
 
-    {% if weibo %}
-    {% for w in weibo %}
-    <p>{{ w.cn_content_clean }}</p>
-    {% endfor %}
-    {% endif %}
+                    {% for freq in stats.dcard_freq %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ freq.0 }}</td>
+                            <td>{{ freq.1 }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="col l6 s12">
+                <h5>Weibo</h5>
+                <table id="weibo" class="highlight freq_table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Token</th>
+                        <th>Frequency</th>
+                    </tr>
+                    </thead>
+                    {% for freq in stats.weibo_freq %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ freq.0 }}</td>
+                            <td>{{ freq.1 }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+        </div>
+    </div>
+    <div class="row">
+        {% if dcard %}
+            <h4 id="posts">Dcard posts</h4>
+            <div class="section">
+                <table class="highlight query_table dcard">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Post</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for d in dcard %}
+                        <tr>
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td>
+                                <ul class="collapsible">
+                                    <li>
+                                        <div class="collapsible-header">{{ d.content_clean }}</div>
+                                        <div class="collapsible-body"></div>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        {% if weibo %}
+            <h4>Weibo posts</h4>
+            <div class="section">
+                <table class="highlight query_table weibo">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Post</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for w in weibo %}
+                        <tr>
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td>
+                                <ul class="collapsible">
+                                    <li>
+                                        <div id="{{ w.id }}" class="collapsible-header">{{ w.cn_content_clean }}</div>
+                                        <div class="collapsible-body">
+                                            <table class="highlight">
+                                                <thead class="centered">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Similarity</th>
+                                                    <th>Post</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="similar_table"></tbody>
+                                            </table>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        {# pagination #}
+
         {% if is_paginated %}
             <ul class="pagination">
                 {% if page_obj.has_previous %}
-                    <li><a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">first</a></li>
-                    <li><a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_left</i> </a>
+                    <li><a href="?page=1
+
+                            {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">first</a>
+                    </li>
+                    <li><a href="?page=
+
+                            {{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i
+                            class="material-icons">chevron_left</i> </a>
                     </li>
                 {% else %}
                     <li class="disabled"><i class="material-icons">chevron_left</i></li>
@@ -26,39 +185,117 @@
                     {% if page_obj.number == i %}
                         <li class="active"><a href="#!">{{ i }}</a></li>
                     {% else %}
-                        <li class="waves-effect"><a href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                        <li class="waves-effect"><a href="?page=
+
+                                {{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
                 {% if page_obj.has_next %}
-                    <li><a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_right</i></a></li>
-                    <li><a href="?page={{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">last</a></li>
+                    <li><a href="?page=
+
+                            {{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i
+                            class="material-icons">chevron_right</i></a></li>
+                    <li><a href="?page=
+
+                            {{ paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">last</a>
+                    </li>
                 {% else %}
                     <li class="disabled"><i class="material-icons">chevron_right</i></li>
                 {% endif %}
             </ul>
         {% endif %}
     </div>
-    {#    {% if is_paginated %}#}
-    {#        <div class="pagination">#}
-    {#    <span class="step-links">#}
-    {#        {% if dcard.has_previous %}#}
-    {#            <a href="?page=1">&laquo; first</a>#}
-    {#            <a href="?page={{ dcard.previous_page_number }}">previous</a>#}
-    {#        {% endif %}#}
-    {##}
-    {#        <span class="current">#}
-    {#            Page {{ dcard.number }} of {{ dcard.paginator.num_pages }}.#}
-    {#        </span>#}
-    {##}
-    {#        {% if dcard.has_next %}#}
-    {#            <a href="?page={{ dcard.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">next</a>#}
-    {#            <a href="?page={{ dcard.paginator.num_pages }}">last &raquo;</a>#}
-    {#        {% endif %}#}
-    {#    </span>#}
-    {#        </div>#}
-    {#    {% endif %}#}
-    {#{% for w in weibo %}#}
-    {#<p>{{ w.content_raw }}</p>#}
-    {#{% endfor %}#}
+
+    <!-- Modal Structure -->
+    <div id="collocation_modal" class="modal">
+        <div class="modal-content">
+            <h4>Collocations</h4>
+            <table class="highlight centered">
+                <thead>
+                <tr>
+                    <th>Token 1</th>
+                    <th>Token 2</th>
+                </tr>
+                </thead>
+                <tbody id="collocation_table">
+
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+    </div>
+
 {% endblock content %}
+{% block javascript %}
+    <script>
+        $(document).ready(function () {
+            $(".collapsible").collapsible();
+            $('.modal').modal({
+                    onCloseStart: function () {
+                        $(".modal-content > table > tbody > tr").remove()
+                    }
+                }
+            );
+            {#$(".freq_table > tbody > tr > td:nth-child(2)")#}
+            $(".freq_table > tbody > tr > td:nth-child(2)").click(function () {
+                let token = $(this).text();
+                let table = $(this).closest('table').attr('id');
+                $('#collocation_modal').modal('open');
+
+                $.ajax({
+                    url: "{% url 'collocation' %}",
+                    type: "GET",
+                    data: {
+                        'token': token,
+                        'table': table,
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        let results = data.results;
+                        let collo_table = $("#collocation_table");
+                        $.each(results, function (idx, elem) {
+                            collo_table.append("<tr><td>" + elem[0] + "</td><td>" + elem[1] + "</td></tr>");
+                        });
+
+                        $("#collocation_modal_content").append(
+                            "<h4> " + token + "collocations</h4>"
+                        )
+
+                    },
+                    error: function (data) {
+                        alert("error")
+                    }
+                });
+            });
+            $(".query_table > tbody > tr > td > ul > li > div:nth-child(1)").click(function () {
+                let query = $(this).attr('id');
+                let table = ($(this).closest('table').hasClass('dcard') ? 'dcard' : 'weibo');
+                let sim_table = $(this).next("div").find("tbody");
+                $.ajax({
+                    url: "{% url 'similarity' %}",
+                    type: "GET",
+                    data: {
+                        'query': query,
+                        'table': table,
+                        'tags': "{{ tags }}",
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                        let similarities = data.similar_docs;
+                        console.log(similarities);
+                        $.each(similarities, function (idx, elem) {
+                            idx++;
+                            sim_table.append("<tr><td>" + idx + "</td><td>" + elem[0] + "</td><td>" + elem[1] + "</td><tr>");
+                        })
+                    },
+                    error: function (data) {
+                        alert("error")
+                    }
+                })
+            })
+        });
+    </script>
+{% endblock javascript %}

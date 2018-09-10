@@ -5,5 +5,6 @@ app_name = "core"
 
 url_patterns = [
     path("", views.Home.as_view(), name='index'),
-    path("results/", views.SearchListView.as_view(), name='results')
+    path("results/", views.SearchListView.as_view(), name='results'),
+    path("/similar", views.similarity_view, name='similar'),
 ]

@@ -1,0 +1,10 @@
+:target::before {
+    content: "";
+    display: block;
+    height: 120px;
+    margin: -120px 0 0;
+}
+
+ul.pagination li.active {
+    background: #0277bd;
+}

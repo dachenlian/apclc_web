@@ -21,46 +21,26 @@ PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation) + ["##"]
 punc_regex = re.compile(r"")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
+cc = OpenCC('s2t')
+
 with open(f"{BASE_DIR}/static/misc/baidu_stopwords.txt") as fp:
     stop_cn = set(fp.read().split("\n"))
 with open(f"{BASE_DIR}/static/misc/baidu_stopwords_trad.txt") as fp:
     stop_tw = set(fp.read().split("\n"))
 
 
-def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True):
-    dcard_posts = []
-    weibo_posts = []
+def get_stats(dcard: DcardPost.objects, weibo: WeiboPost.objects, filter_stopwords=True, filter_punctuation=True):
+    weibo_male = weibo.filter(user_gender__icontains='m').count()
+    weibo_female = weibo.filter(user_gender__icontains='f').count()
+    dcard_male = dcard.filter(user_gender__icontains='m').count()
+    dcard_female = dcard.filter(user_gender__icontains='f').count()
 
-    weibo_male = 0
-    weibo_female = 0
-    dcard_male = 0
-    dcard_female = 0
-
-    for post in dcard:
-        if tag in post['tags']:
-            dcard_posts.append(post)
-    for post in weibo:
-        if tag in post['tags_tw']:
-            weibo_posts.append(post)
-
-    for post in dcard_posts:
-        if post["gender"].lower() == "m":
-            dcard_male += 1
-        else:
-            dcard_female += 1
-
-    for post in weibo_posts:
-        if post["userGender"].lower() == "m":
-            weibo_male += 1
-        else:
-            weibo_female += 1
-
-    total_dcard_posts = len(dcard_posts)
-    total_weibo_posts = len(weibo_posts)
+    total_dcard_posts = dcard.count()
+    total_weibo_posts = weibo.count()
 
     weibo_freq = Counter()
-    for post in weibo_posts:
-        weibo_freq.update(post['cleanText_seg_cn'])
+    for post in weibo:
+        weibo_freq.update(post.cn_content_clean_seg)
 
     weibo_freq = weibo_freq.most_common()
     if filter_punctuation:
@@ -69,8 +49,8 @@ def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True)
         weibo_freq = [tok for tok in weibo_freq if tok[0] not in stop_cn]
 
     dcard_freq = Counter()
-    for post in dcard_posts:
-        dcard_freq.update(post['content_seg'])
+    for post in dcard:
+        dcard_freq.update(post.content_clean_seg)
 
     dcard_freq = dcard_freq.most_common()
     if filter_punctuation:
@@ -78,15 +58,13 @@ def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True)
     if filter_stopwords:
         dcard_freq = [tok for tok in dcard_freq if tok[0] not in stop_tw]
 
-    weibo_average_post_length = sum([len(w['cleanText_seg_cn']) for w in weibo_posts]) / len(weibo_posts)
-    dcard_average_post_length = sum([len(d['content_seg']) for d in dcard_posts]) / len(dcard_posts)
+    weibo_average_post_length = sum([len(w.cn_content_clean_seg) for w in weibo]) / total_weibo_posts
+    dcard_average_post_length = sum([len(d.content_clean_seg) for d in dcard]) / total_dcard_posts
 
-    dcard_sentiment = calculate_sentiment([d['content_seg'] for d in dcard_posts])
-    weibo_sentiment = calculate_sentiment([w['cleanText_seg_tw'] for w in weibo_posts])
+    dcard_sentiment = calculate_sentiment([d.content_clean_seg for d in dcard])
+    weibo_sentiment = calculate_sentiment([w.tw_content_clean_seg for w in weibo])
 
     stats = {
-        'dcard_posts': dcard_posts,
-        'weibo_posts': weibo_posts,
         'dcard_sentiment': dcard_sentiment,
         'weibo_sentiment': weibo_sentiment,
         'weibo_average_post_length': weibo_average_post_length,
@@ -97,41 +75,72 @@ def get_stats(tag, dcard, weibo, filter_stopwords=True, filter_punctuation=True)
         'weibo_female': weibo_female,
         'dcard_male': dcard_male,
         'dcard_female': dcard_female,
-        'weibo_freq': weibo_freq,
-        'dcard_freq': dcard_freq,
+        'weibo_freq': weibo_freq[:100],
+        'dcard_freq': dcard_freq[:100],
     }
 
     return stats
 
 
-def get_similarities(tag, dcard, weibo):
-    dcard_posts = [d['content_seg'] for d in dcard]
-    weibo_posts = [w['cleanText_seg_tw'] for w in weibo]
-    dictionary = corpora.Dictionary(dcard_posts)
-    dictionary.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.dict")
+def get_similarities(tag, table, query, dcard, weibo):
+    dcard_posts = [d.content_clean_seg for d in dcard]
+    weibo_posts = [w.tw_content_clean_seg for w in weibo]
+    if table == 'weibo':
+        dictionary = corpora.Dictionary(dcard_posts)
+    else:
+        dictionary = corpora.Dictionary(weibo_posts)
+
+    dictionary.save(f"{BASE_DIR}/static/gensim_files/{table}_{tag}.dict")
     corpus = [dictionary.doc2bow(text) for text in dcard_posts]
-    corpora.MmCorpus.serialize(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.mm", corpus)
+    corpora.MmCorpus.serialize(f"{BASE_DIR}/static/gensim_files/{table}_{tag}.mm", corpus)
     tfidf = models.TfidfModel(corpus)
     corpus_tfidf = tfidf[corpus]
     lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=300)
     # corpus_lsi = lsi[corpus_tfidf]
-    lsi.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.lsi")
+    lsi.save(f"{BASE_DIR}/static/gensim_files/{table}_{tag}.lsi")
     index = similarities.MatrixSimilarity(lsi[corpus])
-    index.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.index")
+    index.save(f"{BASE_DIR}/static/gensim_files/{table}_{tag}.index")
 
-    doc_index = random.randint(0, len(weibo_posts))
-    doc_tw = weibo_posts[doc_index]
-    doc_cn = weibo[doc_index]['cleanText_cn']
+    doc_tw = [cc.convert(q) for q in query]
+    doc_cn = query
+
     vec_bow = dictionary.doc2bow(doc_tw)
     vec_lsi = lsi[vec_bow]
     sims = index[vec_lsi]
     sims = sorted(enumerate(sims), key=lambda item: -item[1])
-
     similar_docs = []
     for sim in sims[:100]:
-        similar_docs.append(["".join(dcard_posts[sim[0]]), sim[1]])
+        similar_docs.append(["".join(dcard_posts[sim[0]]), int(sim[1])])
+    return similar_docs
 
-    return doc_cn, similar_docs
+# def get_similarities(tag, table, query, dcard, weibo):
+#     dcard_posts = [d.content_clean_seg for d in dcard]
+#     weibo_posts = [w.tw_content_clean_seg for w in weibo]
+#     dictionary = corpora.Dictionary(dcard_posts)
+#     dictionary.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.dict")
+#     corpus = [dictionary.doc2bow(text) for text in dcard_posts]
+#     corpora.MmCorpus.serialize(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.mm", corpus)
+#     tfidf = models.TfidfModel(corpus)
+#     corpus_tfidf = tfidf[corpus]
+#     lsi = models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=300)
+#     # corpus_lsi = lsi[corpus_tfidf]
+#     lsi.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.lsi")
+#     index = similarities.MatrixSimilarity(lsi[corpus])
+#     index.save(f"{BASE_DIR}/static/gensim_files/dcard_{tag}.index")
+#
+#     doc_index = random.randint(0, len(weibo_posts))
+#     doc_tw = weibo_posts[doc_index]
+#     doc_cn = weibo[doc_index]['cleanText_cn']
+#     vec_bow = dictionary.doc2bow(doc_tw)
+#     vec_lsi = lsi[vec_bow]
+#     sims = index[vec_lsi]
+#     sims = sorted(enumerate(sims), key=lambda item: -item[1])
+#
+#     similar_docs = []
+#     for sim in sims[:100]:
+#         similar_docs.append(["".join(dcard_posts[sim[0]]), sim[1]])
+#
+#     return similar_docs
 
 
 def word_filter(token, *w):
@@ -217,7 +226,8 @@ def weibo_five_mil_save_to_db(file):
     html_regex = re.compile(r'(www|http)\S+', flags=re.MULTILINE)
     null_regex = re.compile(r'\x00')
     with open(file) as fp:
-        fp.readline()  # skip headers
+        for i in range(1000000):
+            fp.readline()  # skip headers
         for idx, line in enumerate(fp):
             if idx % 10000 == 0:
                 print(f"{idx} posts...")
@@ -260,4 +270,3 @@ def weibo_five_mil_save_to_db(file):
                     source=source,
                     reposts_count=reposts_count
                 ).save()
-

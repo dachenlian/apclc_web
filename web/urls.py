@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r"^results/$", core.views.SearchListView.as_view(), name='results'),
     re_path(r'^$', core.views.HomeView.as_view(), name="home"),
-    re_path('^ajax/collocation/$', core.views.collocation_view, name='collocation')
+    re_path('^ajax/collocation/$', core.views.collocation_view, name='collocation'),
+    re_path(r'^ajax/similarity/$', core.views.similarity_view, name='similarity')
 ]

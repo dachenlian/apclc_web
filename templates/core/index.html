@@ -17,37 +17,6 @@
     </div>
     {% if stats %}
         <div class="section">
-            <table class="centered">
-                <thead>
-                <tr>
-                    <th>Site</th>
-                    <th>Total Posts</th>
-                    <th>Men</th>
-                    <th>Women</th>
-                    <th>Average Post Length</th>
-                    <th>Polarity</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>Dcard</td>
-                    <td>{{ total_dcard_posts }}</td>
-                    <td>{{ dcard_male }}</td>
-                    <td>{{ dcard_female }}</td>
-                    <td>{{ dcard_average_post_length }}</td>
-                    <td>{{ dcard_sentiment }}</td>
-                </tr>
-                <tr>
-                    <td>Weibo</td>
-                    <td>{{ total_weibo_posts }}</td>
-                    <td>{{ weibo_male }}</td>
-                    <td>{{ weibo_female }}</td>
-                    <td>{{ weibo_average_post_length }}</td>
-                    <td>{{ weibo_sentiment }}</td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
     {% endif %}
     {% if query_doc %}
         <div class="row">
