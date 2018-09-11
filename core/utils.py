@@ -1,7 +1,6 @@
 import pickle
 from functools import partial
 import logging
-import random
 from collections import Counter
 import string
 import json
@@ -21,7 +20,8 @@ PUNCTUATION = list(string.punctuation) + list(zhon.hanzi.punctuation) + ["##"]
 punc_regex = re.compile(r"")
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-cc = OpenCC('s2t')
+s2t = OpenCC('s2t')
+t2s = OpenCC('t2s')
 
 with open(f"{BASE_DIR}/static/misc/baidu_stopwords.txt") as fp:
     stop_cn = set(fp.read().split("\n"))
@@ -84,7 +84,7 @@ def get_stats(dcard: DcardPost.objects, weibo: WeiboPost.objects, filter_stopwor
 
 def get_similarities(tag, table, query, dcard, weibo):
     dcard_posts = [d.content_clean_seg for d in dcard]
-    weibo_posts = [w.tw_content_clean_seg for w in weibo]
+    weibo_posts = [w.cn_content_clean_seg for w in weibo]
     if table == 'weibo':
         dictionary = corpora.Dictionary(dcard_posts)
     else:
@@ -101,16 +101,19 @@ def get_similarities(tag, table, query, dcard, weibo):
     index = similarities.MatrixSimilarity(lsi[corpus])
     index.save(f"{BASE_DIR}/static/gensim_files/{table}_{tag}.index")
 
-    doc_tw = [cc.convert(q) for q in query]
-    doc_cn = query
-
-    vec_bow = dictionary.doc2bow(doc_tw)
+    if table == 'weibo':
+        query = [s2t.convert(q) for q in query]
+        posts = dcard_posts  # Dcard posts that are most similar to Weibo query
+    else:
+        query = [t2s.convert(q) for q in query]
+        posts = weibo_posts  # Weibo posts that are most similar to Dcard query
+    vec_bow = dictionary.doc2bow(query)
     vec_lsi = lsi[vec_bow]
     sims = index[vec_lsi]
     sims = sorted(enumerate(sims), key=lambda item: -item[1])
     similar_docs = []
-    for sim in sims[:100]:
-        similar_docs.append(["".join(dcard_posts[sim[0]]), int(sim[1])])
+    for sim in sims[:10]:
+        similar_docs.append(["".join(posts[sim[0]]), str(round(sim[1]*100, 2)) + "%"])
     return similar_docs
 
 # def get_similarities(tag, table, query, dcard, weibo):
@@ -226,47 +229,54 @@ def weibo_five_mil_save_to_db(file):
     html_regex = re.compile(r'(www|http)\S+', flags=re.MULTILINE)
     null_regex = re.compile(r'\x00')
     with open(file) as fp:
-        for i in range(1000000):
+        for i in range(1820000):
             fp.readline()  # skip headers
-        for idx, line in enumerate(fp):
+        for idx, line in enumerate(fp, 1820000):
             if idx % 10000 == 0:
                 print(f"{idx} posts...")
             post = line.split("\t")
-            weibo_id = int(post[0])
-            if WeiboFiveMilPost.objects.filter(weibo_id=weibo_id).exists():
-                continue
-            else:
-                attitudes_count = int(post[1])
-                comments_count = int(post[3])
-                created_at = post[4]
-                _id = int(post[7])
-                content_raw = post[18]
-                content_raw = null_regex.sub("", content_raw)
-                cn_content_clean = clean_regex.sub("", content_raw)
-                cn_content_clean = html_regex.sub("LINK", cn_content_clean)
-                cn_content_clean_seg = list(jieba.cut(cn_content_clean))
-                tw_content_clean = openCC.convert(cn_content_clean)
-                tw_content_clean_seg = [openCC.convert(c) for c in cn_content_clean_seg]
-                cn_tags = hashtag_regex.findall(cn_content_clean)
-                if cn_tags:
-                    tw_tags = [openCC.convert(t) for t in cn_tags]
+            try:
+                weibo_id = int(post[0])
+                if WeiboFiveMilPost.objects.filter(weibo_id=weibo_id).exists():
+                    continue
                 else:
-                    tw_tags = []
-                reposts_count = int(post[16])
-                source = post[17]
-                WeiboFiveMilPost(
-                    weibo_id=weibo_id,
-                    attitudes_count=attitudes_count,
-                    comments_count=comments_count,
-                    created_at=created_at,
-                    _id=_id,
-                    content_raw=content_raw,
-                    cn_content_clean=cn_content_clean,
-                    cn_content_clean_seg=cn_content_clean_seg,
-                    tw_content_clean=tw_content_clean,
-                    tw_content_clean_seg=tw_content_clean_seg,
-                    cn_tags=cn_tags,
-                    tw_tags=tw_tags,
-                    source=source,
-                    reposts_count=reposts_count
-                ).save()
+                    try:
+                        attitudes_count = int(post[1])
+                        comments_count = int(post[3])
+                        created_at = post[4]
+                        _id = int(post[7])
+                        content_raw = post[18]
+                        content_raw = null_regex.sub("", content_raw)
+                        cn_content_clean = clean_regex.sub("", content_raw)
+                        cn_content_clean = html_regex.sub("LINK", cn_content_clean)
+                        cn_content_clean_seg = list(jieba.cut(cn_content_clean))
+                        tw_content_clean = openCC.convert(cn_content_clean)
+                        tw_content_clean_seg = [openCC.convert(c) for c in cn_content_clean_seg]
+                        cn_tags = hashtag_regex.findall(cn_content_clean)
+                        if cn_tags:
+                            tw_tags = [openCC.convert(t) for t in cn_tags]
+                        else:
+                            tw_tags = []
+                        reposts_count = int(post[16])
+                        source = post[17]
+                        WeiboFiveMilPost(
+                            weibo_id=weibo_id,
+                            attitudes_count=attitudes_count,
+                            comments_count=comments_count,
+                            created_at=created_at,
+                            _id=_id,
+                            content_raw=content_raw,
+                            cn_content_clean=cn_content_clean,
+                            cn_content_clean_seg=cn_content_clean_seg,
+                            tw_content_clean=tw_content_clean,
+                            tw_content_clean_seg=tw_content_clean_seg,
+                            cn_tags=cn_tags,
+                            tw_tags=tw_tags,
+                            source=source,
+                            reposts_count=reposts_count
+                        ).save()
+                    except ValueError as err:
+                        print(err)
+                        continue
+            except ValueError as err:
+                print(err)
